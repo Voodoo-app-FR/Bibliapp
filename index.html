@@ -294,14 +294,16 @@ async function startScan(){
   $('btn-start').disabled=true;
   $('cam-status').textContent='Démarrage…';
   try{
-    scanner=new Html5Qrcode('qr-reader');
+    scanner=new Html5Qrcode('qr-reader', {
+      useBarCodeDetectorIfSupported: false,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: false }
+    });
     await scanner.start(
       {facingMode:'environment'},
       {
         fps:10,
         qrbox:{width:260,height:100},
-        aspectRatio:1.5,
-        useBarCodeDetectorIfSupported:false
+        aspectRatio:1.5
       },
       onScanSuccess,
       _=>{}
