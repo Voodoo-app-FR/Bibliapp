@@ -458,10 +458,13 @@ async function startScan(){
   $('cam-hint').textContent='Démarrage de la caméra…';
   try{
     codeReader=new ZXing.BrowserMultiFormatReader();
-    const devices=await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
-    // Préférer la caméra arrière
-    const backCam=devices.find(d=>/(back|rear|environment)/i.test(d.label))||devices[devices.length-1];
-    const deviceId=backCam?.deviceId;
+
+    // Trouver la caméra arrière via mediaDevices (compatible Android Chrome)
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    const videoDevices=devices.filter(d=>d.kind==='videoinput');
+    const backCam=videoDevices.find(d=>/(back|rear|environment)/i.test(d.label))
+                 ||videoDevices[videoDevices.length-1];
+    const deviceId=backCam?.deviceId||undefined;
 
     await codeReader.decodeFromVideoDevice(deviceId,'cam-video',async(result,err)=>{
       if(!result) return;
