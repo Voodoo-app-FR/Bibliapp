@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Biblio"/>
   <title>Bibliothèque</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -20,141 +21,51 @@
       --T:env(safe-area-inset-top,0px);--B:env(safe-area-inset-bottom,0px)
     }
     html,body{height:100%;background:var(--bg)}
-    body{
-      font-family:'Inconsolata',monospace;color:var(--text);
-      -webkit-font-smoothing:antialiased;
-      display:flex;flex-direction:column;
-      height:100dvh;overflow:hidden;padding-top:var(--T)
-    }
+    body{font-family:'Inconsolata',monospace;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;height:100dvh;overflow:hidden;padding-top:var(--T)}
 
-    /* HEADER */
-    .hdr{
-      flex-shrink:0;z-index:200;
-      background:rgba(14,12,10,.96);
-      backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-      border-bottom:1px solid var(--border)
-    }
+    .hdr{flex-shrink:0;z-index:200;background:rgba(14,12,10,.96);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--border)}
     .hdr-top{padding:12px 18px;display:flex;align-items:center;gap:10px}
     .hdr-icon{font-size:1.4rem}
     .hdr-title{font-family:'Cormorant Garamond',serif;font-size:1.22rem;font-weight:600;letter-spacing:.03em;flex:1;line-height:1.1}
     .hdr-sub{font-size:.52rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);display:block;margin-top:1px}
     .hdr-badge{font-size:.6rem;color:var(--gold);background:var(--card);border:1px solid var(--borderB);padding:3px 10px;border-radius:20px;white-space:nowrap}
 
-    /* BOTTOM NAV */
-    .nav{
-      position:fixed;bottom:0;left:0;right:0;z-index:300;
-      background:rgba(14,12,10,.97);
-      backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-      border-top:1px solid var(--border);
-      display:flex;padding-bottom:var(--B)
-    }
-    .nav-btn{
-      flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-      padding:9px 8px;background:none;border:none;cursor:pointer;
-      color:var(--dim);font-family:'Inconsolata',monospace;
-      font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;
-      border-top:2px solid transparent;transition:color .2s,border-color .2s
-    }
+    .nav{position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(14,12,10,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--border);display:flex;padding-bottom:var(--B)}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 8px;background:none;border:none;cursor:pointer;color:var(--dim);font-family:'Inconsolata',monospace;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;border-top:2px solid transparent;transition:color .2s,border-color .2s}
     .nav-btn.active{color:var(--gold);border-top-color:var(--gold)}
-    .nav-btn:active{opacity:.7}
     .nav-icon{font-size:1.25rem;line-height:1}
 
-    /* PAGES */
     .pages{flex:1;overflow:hidden;position:relative}
-    .page{
-      position:absolute;inset:0;
-      overflow-y:auto;overflow-x:hidden;
-      -webkit-overflow-scrolling:touch;
-      padding:14px 16px calc(var(--B) + 68px);
-      display:flex;flex-direction:column;gap:12px;
-      opacity:0;pointer-events:none;transform:translateX(30px);
-      transition:opacity .22s ease,transform .22s ease
-    }
+    .page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:14px 16px calc(var(--B) + 68px);display:flex;flex-direction:column;gap:12px;opacity:0;pointer-events:none;transform:translateX(30px);transition:opacity .22s ease,transform .22s ease}
     .page.active{opacity:1;pointer-events:auto;transform:none}
     .page.left{transform:translateX(-30px)}
 
-    /* SCANNER PAGE */
-    .cam-wrap{
-      position:relative;border-radius:12px;overflow:hidden;
-      background:#000;aspect-ratio:4/3;width:100%;
-      border:1.5px solid var(--borderB)
-    }
-    #cam-video{width:100%;height:100%;object-fit:cover;display:block}
+    /* html5-qrcode container */
+    #qr-reader{width:100%;border-radius:12px;overflow:hidden;border:1.5px solid var(--borderB);background:#000;position:relative}
+    /* Masquer les éléments parasites générés par html5-qrcode */
+    #qr-reader__header_message,
+    #qr-reader__status_span,
+    #qr-reader img[alt="Info icon"]{display:none!important}
+    #qr-reader__dashboard{padding:6px 8px!important;background:var(--surface)!important}
+    #qr-reader__dashboard_section_csr>span{color:var(--dim)!important;font-size:.65rem!important;font-family:'Inconsolata',monospace!important}
+    #qr-reader__camera_selection{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'Inconsolata',monospace;font-size:.7rem;margin:4px 0;outline:none}
+    #qr-reader__camera_permission_button{background:var(--gold);color:var(--bg);border:none;border-radius:6px;padding:8px 16px;font-family:'Inconsolata',monospace;font-size:.7rem;cursor:pointer;margin-top:4px}
 
-    /* Laser line */
-    .cam-laser{
-      position:absolute;left:10%;right:10%;top:50%;
-      height:2px;margin-top:-1px;
-      background:linear-gradient(90deg,transparent,var(--gold),var(--goldB),var(--gold),transparent);
-      animation:laserPulse 1.5s ease-in-out infinite;
-      pointer-events:none
-    }
-    @keyframes laserPulse{0%,100%{opacity:.4;transform:scaleX(.9)}50%{opacity:1;transform:scaleX(1)}}
-
-    /* Corner guides */
-    .cam-wrap::before,.cam-wrap::after{
-      content:'';position:absolute;z-index:2;pointer-events:none;
-      width:28px;height:28px;border-color:var(--gold);border-style:solid
-    }
-    .cam-wrap::before{top:12px;left:12px;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
-    .cam-wrap::after{bottom:12px;right:12px;border-width:0 2px 2px 0;border-radius:0 0 4px 0}
-
-    .cam-overlay{
-      position:absolute;inset:0;
-      background:linear-gradient(180deg,rgba(14,12,10,.5) 0%,transparent 30%,transparent 70%,rgba(14,12,10,.5) 100%);
-      pointer-events:none
-    }
-    .cam-hint{
-      position:absolute;bottom:10px;left:0;right:0;
-      text-align:center;font-size:.6rem;letter-spacing:.1em;
-      text-transform:uppercase;color:rgba(232,192,112,.8)
-    }
-    .cam-isbn{
-      position:absolute;top:10px;left:0;right:0;
-      text-align:center;font-size:.72rem;letter-spacing:.08em;
-      color:var(--goldB);font-weight:500;
-      text-shadow:0 1px 4px rgba(0,0,0,.8)
-    }
+    /* Laser overlay */
+    .cam-laser{position:absolute;left:10%;right:10%;top:50%;height:2px;margin-top:-1px;pointer-events:none;z-index:20;background:linear-gradient(90deg,transparent,var(--gold),var(--goldB),var(--gold),transparent);animation:laserP 1.5s ease-in-out infinite;display:none}
+    .cam-laser.on{display:block}
+    @keyframes laserP{0%,100%{opacity:.35;transform:scaleX(.92)}50%{opacity:1;transform:scaleX(1)}}
 
     .cam-controls{display:flex;gap:8px}
-    .btn-cam{
-      flex:1;padding:13px 8px;border-radius:8px;border:none;cursor:pointer;
-      font-family:'Inconsolata',monospace;font-size:.72rem;font-weight:500;
-      letter-spacing:.1em;text-transform:uppercase;
-      display:flex;align-items:center;justify-content:center;gap:7px;
-      transition:opacity .15s,transform .15s
-    }
+    .btn-cam{flex:1;padding:13px 8px;border-radius:8px;border:none;cursor:pointer;font-family:'Inconsolata',monospace;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .15s}
     .btn-cam:active{transform:scale(.97);opacity:.85}
     .btn-cam.pri{background:var(--gold);color:var(--bg)}
     .btn-cam.sec{background:var(--card);color:var(--text);border:1px solid var(--border)}
     .btn-cam:disabled{opacity:.3;cursor:not-allowed}
 
-    /* Pending book card (after scan) */
-    .pending-card{
-      background:var(--card);border:1px solid var(--borderB);border-radius:10px;
-      overflow:hidden;animation:up .25s ease both
-    }
-    .pending-cover{
-      display:flex;gap:14px;padding:14px
-    }
-    .cover-img{
-      width:60px;height:85px;object-fit:cover;border-radius:4px;
-      background:var(--surface);flex-shrink:0;border:1px solid var(--border)
-    }
-    .cover-placeholder{
-      width:60px;height:85px;border-radius:4px;background:var(--surface);
-      flex-shrink:0;border:1px solid var(--border);
-      display:flex;align-items:center;justify-content:center;
-      font-size:1.5rem;opacity:.4
-    }
-    .pending-meta{flex:1;min-width:0}
-    .pending-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;line-height:1.3;margin-bottom:4px}
-    .pending-author{font-size:.68rem;color:var(--gold);font-style:italic;margin-bottom:8px}
-    .pending-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-    .pending-isbn{font-size:.58rem;color:var(--faint);margin-top:4px}
-    .pending-actions{display:flex;gap:8px;padding:0 14px 14px}
+    .cam-status{text-align:center;font-size:.64rem;color:var(--dim);letter-spacing:.06em;padding:2px 0}
+    .cam-isbn{text-align:center;font-size:.8rem;color:var(--goldB);font-weight:500;min-height:1.3em}
 
-    /* Loader inline */
     .ldr{display:none;flex-direction:column;gap:8px}
     .ldr.on{display:flex}
     .ldr-lbl{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);text-align:center;animation:blink 1.3s ease-in-out infinite}
@@ -163,82 +74,53 @@
     .ldr-fill{height:100%;background:linear-gradient(90deg,var(--rust),var(--goldB));animation:sweep 1.8s ease-in-out infinite}
     @keyframes sweep{0%{width:0%;margin-left:0}50%{width:65%;margin-left:18%}100%{width:0%;margin-left:100%}}
 
-    /* Tags */
     .t{font-size:.52rem;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:3px}
     .t.yr{background:rgba(200,160,80,.09);color:rgba(200,160,80,.6);border:1px solid rgba(200,160,80,.15)}
     .t.ln{background:rgba(255,255,255,.03);color:var(--faint);border:1px solid var(--border)}
     .t.gn{background:rgba(138,50,32,.1);color:#c06858;border:1px solid rgba(138,50,32,.18)}
 
-    /* Action buttons */
-    .btn-action{
-      flex:1;padding:11px 8px;border-radius:7px;border:none;cursor:pointer;
-      font-family:'Inconsolata',monospace;font-size:.68rem;font-weight:500;
-      letter-spacing:.1em;text-transform:uppercase;
-      display:flex;align-items:center;justify-content:center;gap:6px;
-      transition:opacity .15s,transform .15s
-    }
-    .btn-action:active{transform:scale(.97);opacity:.85}
-    .btn-action.add{background:var(--gold);color:var(--bg)}
-    .btn-action.skip{background:var(--card);color:var(--dim);border:1px solid var(--border)}
+    .pending-card{background:var(--card);border:1px solid var(--borderB);border-radius:10px;overflow:hidden;animation:up .25s ease both}
+    .pending-cover{display:flex;gap:14px;padding:14px}
+    .cover-img{width:60px;height:85px;object-fit:cover;border-radius:4px;background:var(--surface);flex-shrink:0;border:1px solid var(--border)}
+    .cover-ph{width:60px;height:85px;border-radius:4px;background:var(--surface);flex-shrink:0;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.5rem;opacity:.4}
+    .pending-meta{flex:1;min-width:0}
+    .pending-title{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:600;line-height:1.3;margin-bottom:4px}
+    .pending-author{font-size:.68rem;color:var(--gold);font-style:italic;margin-bottom:8px}
+    .pending-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+    .pending-isbn{font-size:.58rem;color:var(--faint)}
+    .pending-actions{display:flex;gap:8px;padding:0 14px 14px}
+    .btn-pa{flex:1;padding:11px 8px;border-radius:7px;border:none;cursor:pointer;font-family:'Inconsolata',monospace;font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .15s,transform .15s}
+    .btn-pa:active{transform:scale(.97);opacity:.85}
+    .btn-pa.add{background:var(--gold);color:var(--bg)}
+    .btn-pa.skip{background:var(--card);color:var(--dim);border:1px solid var(--border)}
 
-    /* err */
     .err{background:rgba(138,50,32,.1);border:1px solid var(--rust);border-radius:8px;padding:12px 14px;color:#bf6858;font-size:.68rem;line-height:1.7}
     .err strong{display:block;margin-bottom:3px}
 
-    /* HISTORY (recently scanned) */
-    .section-ttl{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:400;color:var(--dim)}
     .sep{height:1px;background:linear-gradient(90deg,transparent,var(--borderB),transparent);flex-shrink:0}
+    .section-ttl{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:400;color:var(--dim)}
 
-    /* LIBRARY TOOLBAR */
-    .lib-toolbar{
-      position:sticky;top:0;z-index:50;background:var(--bg);
-      margin:-14px -16px 0;padding:12px 16px 10px;
-      border-bottom:1px solid var(--border);
-      display:flex;flex-direction:column;gap:8px
-    }
+    .lib-toolbar{position:sticky;top:0;z-index:50;background:var(--bg);margin:-14px -16px 0;padding:12px 16px 10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
     .search-wrap{position:relative}
-    .s-input{
-      width:100%;background:var(--surface);border:1px solid var(--border);
-      border-radius:8px;padding:10px 36px 10px 36px;
-      font-family:'Inconsolata',monospace;font-size:.75rem;color:var(--text);
-      outline:none;transition:border-color .2s
-    }
+    .s-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 36px 10px 36px;font-family:'Inconsolata',monospace;font-size:.75rem;color:var(--text);outline:none;transition:border-color .2s}
     .s-input::placeholder{color:var(--faint)}
     .s-input:focus{border-color:var(--borderB)}
     .s-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:.9rem;opacity:.35;pointer-events:none}
     .s-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--faint);font-size:1rem;cursor:pointer;padding:2px;line-height:1;display:none}
     .s-clear.visible{display:block}
-
     .genre-select-wrap{position:relative;display:flex;align-items:center}
     .genre-select-icon{position:absolute;left:11px;font-size:.85rem;opacity:.45;pointer-events:none;z-index:1}
     .genre-select-arrow{position:absolute;right:11px;font-size:.65rem;color:var(--dim);pointer-events:none}
-    .genre-select{
-      width:100%;background:var(--surface);border:1px solid var(--border);
-      border-radius:8px;padding:9px 32px 9px 32px;
-      font-family:'Inconsolata',monospace;font-size:.72rem;color:var(--text);
-      outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .2s
-    }
+    .genre-select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 32px 9px 32px;font-family:'Inconsolata',monospace;font-size:.72rem;color:var(--text);outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .2s}
     .genre-select:focus{border-color:var(--borderB)}
     .genre-select option{background:var(--card);color:var(--text)}
-
     .sort-row{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
     .sort-row::-webkit-scrollbar{display:none}
     .sort-lbl{font-size:.55rem;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
-    .sort-btn{
-      flex-shrink:0;padding:5px 10px;border-radius:5px;
-      font-family:'Inconsolata',monospace;font-size:.55rem;letter-spacing:.07em;text-transform:uppercase;
-      cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--dim);
-      transition:all .15s;white-space:nowrap
-    }
+    .sort-btn{flex-shrink:0;padding:5px 10px;border-radius:5px;font-family:'Inconsolata',monospace;font-size:.55rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--dim);transition:all .15s;white-space:nowrap}
     .sort-btn.on{border-color:var(--borderB);color:var(--text);background:var(--card)}
-    .sort-btn:active{transform:scale(.95)}
 
-    /* Book card in library */
-    .bk{
-      background:var(--card);border:1px solid var(--border);border-radius:8px;
-      padding:11px 13px 11px 16px;position:relative;overflow:hidden;
-      animation:up .28s ease both
-    }
+    .bk{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:11px 13px 11px 16px;position:relative;overflow:hidden;animation:up .28s ease both}
     @keyframes up{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
     .bk::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--rust),var(--gold));border-radius:3px 0 0 3px}
     .bk-row{display:flex;align-items:flex-start;gap:9px}
@@ -250,43 +132,27 @@
     .bk-del:active{color:#bf6858}
     .bk-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
 
-    /* Library empty */
     .lib-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:44px 20px}
     .lib-empty-icon{font-size:3.5rem;opacity:.22}
     .lib-empty h3{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:300;color:var(--dim)}
     .lib-empty p{font-size:.65rem;color:var(--faint);line-height:1.75;max-width:200px}
     .btn-goto{background:var(--gold);color:var(--bg);border:none;border-radius:7px;padding:11px 22px;font-family:'Inconsolata',monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;margin-top:4px;transition:opacity .15s}
-    .btn-goto:active{opacity:.8}
-
     .no-res{text-align:center;padding:28px 20px;color:var(--faint);font-size:.67rem;font-style:italic}
     .info-bar{font-size:.59rem;color:var(--faint);letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px}
     .info-bar span{color:var(--dim)}
     .info-bar em{color:var(--gold);font-style:normal}
-
     .act-row{display:flex;gap:7px;flex-wrap:wrap}
-    .btn-act{
-      flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:7px;
-      color:var(--dim);padding:10px 8px;
-      font-family:'Inconsolata',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;
-      cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s
-    }
+    .btn-act{flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--dim);padding:10px 8px;font-family:'Inconsolata',monospace;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s}
     .btn-act:active{background:var(--card2);border-color:var(--borderB);color:var(--gold)}
     .btn-act.danger{color:var(--faint)}
     .btn-act.danger:active{color:#bf6858;border-color:rgba(154,58,40,.4)}
 
-    /* TOAST */
-    .toast{
-      position:fixed;bottom:calc(var(--B) + 68px);left:50%;transform:translateX(-50%) translateY(60px);
-      background:var(--card);border:1px solid var(--borderB);color:var(--gold);
-      padding:9px 18px;border-radius:20px;font-size:.66rem;letter-spacing:.08em;
-      z-index:999;transition:transform .28s ease;white-space:nowrap;pointer-events:none
-    }
+    .toast{position:fixed;bottom:calc(var(--B) + 68px);left:50%;transform:translateX(-50%) translateY(60px);background:var(--card);border:1px solid var(--borderB);color:var(--gold);padding:9px 18px;border-radius:20px;font-size:.66rem;letter-spacing:.08em;z-index:999;transition:transform .28s ease;white-space:nowrap;pointer-events:none}
     .toast.show{transform:translateX(-50%) translateY(0)}
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="hdr">
   <div class="hdr-top">
     <span class="hdr-icon" id="hdr-icon">📷</span>
@@ -298,55 +164,36 @@
   </div>
 </div>
 
-<!-- PAGES -->
 <div class="pages">
 
-  <!-- ══ PAGE SCANNER ══ -->
   <div class="page active" id="page-scan">
-
-    <!-- Viewfinder caméra -->
-    <div class="cam-wrap" id="cam-wrap">
-      <video id="cam-video" autoplay muted playsinline></video>
-      <div class="cam-overlay"></div>
+    <div style="position:relative">
+      <div id="qr-reader"></div>
       <div class="cam-laser" id="cam-laser"></div>
-      <div class="cam-isbn" id="cam-isbn"></div>
-      <div class="cam-hint" id="cam-hint">Pointez vers un code-barres ISBN</div>
     </div>
-
-    <!-- Boutons caméra -->
+    <div class="cam-isbn" id="cam-isbn"></div>
+    <div class="cam-status" id="cam-status">Appuyez sur Démarrer pour scanner un ISBN</div>
     <div class="cam-controls">
-      <button class="btn-cam pri" id="btn-start" onclick="startScan()">▶ Démarrer la caméra</button>
+      <button class="btn-cam pri" id="btn-start" onclick="startScan()">▶ Démarrer</button>
       <button class="btn-cam sec" id="btn-stop" onclick="stopScan()" style="display:none">⏹ Arrêter</button>
-      <button class="btn-cam sec" id="btn-torch" onclick="toggleTorch()" style="display:none">🔦</button>
     </div>
-
-    <!-- Loader recherche infos -->
     <div class="ldr" id="ldr">
-      <div class="ldr-lbl" id="lbl">Recherche du livre…</div>
+      <div class="ldr-lbl">Recherche du livre…</div>
       <div class="ldr-track"><div class="ldr-fill"></div></div>
     </div>
-
-    <!-- Livre détecté en attente -->
     <div id="pending-wrap"></div>
-
-    <!-- Erreur -->
     <div id="scan-err" style="display:none" class="err">
-      <strong>⚠ Livre introuvable</strong>
+      <strong>⚠ Introuvable</strong>
       <span id="scan-err-msg"></span>
     </div>
-
-    <!-- Séparateur + historique session -->
     <div id="session-section" style="display:none">
       <div class="sep"></div>
-      <div class="section-ttl">Scannés ce soir</div>
+      <div class="section-ttl">Scannés cette session</div>
       <div id="session-list"></div>
     </div>
-
   </div>
 
-  <!-- ══ PAGE BIBLIOTHÈQUE ══ -->
   <div class="page" id="page-lib">
-
     <div class="lib-toolbar">
       <div class="search-wrap">
         <span class="s-icon">🔍</span>
@@ -368,31 +215,27 @@
         <button class="sort-btn"    data-s="year"   onclick="setSort('year')">Année</button>
       </div>
     </div>
-
     <div id="lib-info" style="display:none">
       <div class="info-bar" id="info-text"></div>
       <div class="act-row">
         <button class="btn-act" onclick="exportCSV()">⬇ CSV</button>
-        <button class="btn-act" onclick="exportJSON()">💾 Sauvegarder</button>
+        <button class="btn-act" onclick="exportJSON()">💾 Backup</button>
         <button class="btn-act" onclick="importJSON()">📂 Importer</button>
         <button class="btn-act danger" onclick="clearLib()">🗑</button>
       </div>
     </div>
-
     <div class="lib-empty" id="lib-empty">
       <div class="lib-empty-icon">📚</div>
       <h3>Bibliothèque vide</h3>
       <p>Scannez les codes-barres de vos livres pour les ajouter ici</p>
       <button class="btn-goto" onclick="showPage('scan')">📷 Scanner un livre</button>
     </div>
-
     <div class="no-res" id="no-res" style="display:none">Aucun résultat.</div>
     <div id="lib-list"></div>
-
   </div>
+
 </div>
 
-<!-- BOTTOM NAV -->
 <nav class="nav">
   <button class="nav-btn active" id="nav-scan" onclick="showPage('scan')">
     <span class="nav-icon">📷</span>Scanner
@@ -405,44 +248,40 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ═══════════════════════════
-   STATE
-═══════════════════════════ */
 const $=id=>document.getElementById(id);
+
+/* STATE */
 let currentPage='scan', currentSort='date', currentGenre='all';
 let library=[], sessionBooks=[];
-let lastScannedISBN='', scanCooldown=false;
-let camStream=null, scanLoop=null, torchTrack=null, torchOn=false;
-let quaggaLoaded=false;
+let scanner=null, scanning=false;
+let lastISBN='', cooldown=false;
 
-/* ═══════════════════════════
-   INDEXEDDB STORAGE
-═══════════════════════════ */
+/* INDEXEDDB */
 let _db=null;
 function openDB(){
   return new Promise((res,rej)=>{
     if(_db){res(_db);return}
-    const req=indexedDB.open('bibliotheque',1);
-    req.onupgradeneeded=e=>e.target.result.createObjectStore('data');
-    req.onsuccess=e=>{_db=e.target.result;res(_db)};
-    req.onerror=e=>rej(e.target.error);
+    const r=indexedDB.open('bib',1);
+    r.onupgradeneeded=e=>e.target.result.createObjectStore('d');
+    r.onsuccess=e=>{_db=e.target.result;res(_db)};
+    r.onerror=e=>rej(e.target.error);
   });
 }
-async function dbGet(k){const db=await openDB();return new Promise((r,j)=>{const req=db.transaction('data','readonly').objectStore('data').get(k);req.onsuccess=()=>r(req.result);req.onerror=e=>j(e)})}
-async function dbSet(k,v){const db=await openDB();return new Promise((r,j)=>{const req=db.transaction('data','readwrite').objectStore('data').put(v,k);req.onsuccess=()=>r();req.onerror=e=>j(e)})}
-async function saveLib(){try{await dbSet('bib_v3',library)}catch(e){console.warn(e)}updateBadge()}
-async function initLib(){try{library=await dbGet('bib_v3')||[]}catch(e){library=[]}updateBadge()}
+async function dbGet(k){const db=await openDB();return new Promise((r,j)=>{const q=db.transaction('d','readonly').objectStore('d').get(k);q.onsuccess=()=>r(q.result);q.onerror=j})}
+async function dbSet(k,v){const db=await openDB();return new Promise((r,j)=>{const q=db.transaction('d','readwrite').objectStore('d').put(v,k);q.onsuccess=r;q.onerror=j})}
+async function saveLib(){try{await dbSet('lib',library)}catch(e){console.warn(e)}updateBadge()}
+async function initLib(){try{library=await dbGet('lib')||[]}catch(e){library=[]}updateBadge()}
 
-/* ═══════════════════════════
-   NAVIGATION
-═══════════════════════════ */
-const HDR={scan:{icon:'📷',title:'Scanner',sub:'Code-barres ISBN'},lib:{icon:'📚',title:'Ma Bibliothèque',sub:'Collection personnelle'}};
-
+/* NAVIGATION */
+const HDR={
+  scan:{icon:'📷',title:'Scanner',sub:'Code-barres ISBN'},
+  lib:{icon:'📚',title:'Ma Bibliothèque',sub:'Collection personnelle'}
+};
 function showPage(p){
   currentPage=p;
-  const pScan=$('page-scan'),pLib=$('page-lib');
-  if(p==='scan'){pLib.classList.remove('active');pLib.classList.add('left');pScan.classList.remove('left');pScan.classList.add('active')}
-  else{pScan.classList.remove('active');pLib.classList.remove('left');pLib.classList.add('active');renderLib()}
+  const s=$('page-scan'),l=$('page-lib');
+  if(p==='scan'){l.classList.remove('active');l.classList.add('left');s.classList.remove('left');s.classList.add('active')}
+  else{s.classList.remove('active');l.classList.remove('left');l.classList.add('active');renderLib()}
   $('nav-scan').classList.toggle('active',p==='scan');
   $('nav-lib').classList.toggle('active',p==='lib');
   $('hdr-icon').textContent=HDR[p].icon;
@@ -450,165 +289,77 @@ function showPage(p){
   $('hdr-sub').textContent=HDR[p].sub;
 }
 
-/* ═══════════════════════════
-   BARCODE SCANNER — BarcodeDetector natif (Android Chrome)
-═══════════════════════════ */
+/* SCANNER */
 async function startScan(){
   $('btn-start').disabled=true;
-  $('cam-hint').textContent='Démarrage de la caméra…';
+  $('cam-status').textContent='Démarrage…';
   try{
-    // Caméra arrière en haute résolution
-    camStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}
-    });
-    const video=$('cam-video');
-    video.srcObject=camStream;
-    await video.play();
-
-    // Torche si disponible
-    const track=camStream.getVideoTracks()[0];
-    const caps=track.getCapabilities?.();
-    if(caps?.torch){torchTrack=track;$('btn-torch').style.display=''}
-
+    scanner=new Html5Qrcode('qr-reader');
+    await scanner.start(
+      {facingMode:'environment'},
+      {
+        fps:10,
+        qrbox:{width:260,height:100},
+        aspectRatio:1.5,
+        useBarCodeDetectorIfSupported:false
+      },
+      onScanSuccess,
+      _=>{}
+    );
+    scanning=true;
     $('btn-start').style.display='none';
     $('btn-stop').style.display='';
-    $('cam-hint').textContent='Pointez vers un code-barres ISBN';
-
-    // Choisir le moteur de détection
-    if('BarcodeDetector' in window){
-      startNativeDetector(video);
-    } else {
-      // Fallback : décodage canvas pixel-by-pixel via une lib légère
-      await loadFallbackDecoder();
-      startFallbackDetector(video);
-    }
-
+    $('cam-laser').classList.add('on');
+    $('cam-status').textContent='Pointez vers un code-barres ISBN';
   }catch(e){
     $('btn-start').disabled=false;
-    $('cam-hint').textContent='Erreur caméra : '+e.message;
+    $('cam-status').textContent='Erreur caméra : '+(e.message||e);
   }
 }
 
-// ── Moteur 1 : BarcodeDetector natif ──
-function startNativeDetector(video){
-  const detector=new BarcodeDetector({formats:['ean_13','ean_8','isbn','code_128','upc_a','upc_e']});
-  async function tick(){
-    if(!camStream) return;
-    try{
-      const codes=await detector.detect(video);
-      for(const c of codes){
-        const isbn=c.rawValue.replace(/[^0-9X]/g,'');
-        if((isbn.length===13||isbn.length===10)&&!scanCooldown&&isbn!==lastScannedISBN){
-          onISBN(isbn); break;
-        }
-      }
-    }catch(_){}
-    scanLoop=requestAnimationFrame(tick);
-  }
-  scanLoop=requestAnimationFrame(tick);
-}
-
-// ── Moteur 2 : fallback via quagga2 chargé à la demande ──
-async function loadFallbackDecoder(){
-  if(quaggaLoaded) return;
-  await new Promise((res,rej)=>{
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/lib/quagga.min.js';
-    s.onload=res; s.onerror=rej;
-    document.head.appendChild(s);
-  });
-  quaggaLoaded=true;
-}
-
-function startFallbackDecoder(video){
-  $('cam-hint').textContent='Initialisation…';
-  Quagga.init({
-    inputStream:{type:'LiveStream', target:video, constraints:{facingMode:'environment'}},
-    decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','upc_reader']},
-    locate:true
-  },err=>{
-    if(err){$('cam-hint').textContent='Erreur scanner : '+err;return}
-    Quagga.start();
-    $('cam-hint').textContent='Pointez vers un code-barres ISBN';
-  });
-  Quagga.onDetected(data=>{
-    const isbn=(data.codeResult?.code||'').replace(/[^0-9X]/g,'');
-    if((isbn.length===13||isbn.length===10)&&!scanCooldown&&isbn!==lastScannedISBN){
-      onISBN(isbn);
-    }
-  });
-}
-
-function onISBN(isbn){
-  lastScannedISBN=isbn;
-  scanCooldown=true;
-  setTimeout(()=>{scanCooldown=false;lastScannedISBN=''},5000);
+function onScanSuccess(raw){
+  const isbn=raw.replace(/[^0-9X]/gi,'');
+  if(isbn===lastISBN||cooldown) return;
+  if(isbn.length!==13&&isbn.length!==10) return;
+  lastISBN=isbn;cooldown=true;
+  setTimeout(()=>{cooldown=false;lastISBN=''},5000);
   $('cam-isbn').textContent='ISBN : '+isbn;
   $('scan-err').style.display='none';
   fetchBook(isbn);
 }
 
-function stopScan(){
-  // Arrêt BarcodeDetector
-  if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null}
-  // Arrêt Quagga si actif
-  if(quaggaLoaded){try{Quagga.stop()}catch(_){}}
-  // Arrêt caméra
-  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
-  const video=$('cam-video');
-  video.srcObject=null;
-  torchOn=false;torchTrack=null;
+async function stopScan(){
+  if(scanner&&scanning){try{await scanner.stop()}catch(e){}}
+  scanner=null;scanning=false;
   $('btn-start').style.display='';$('btn-start').disabled=false;
-  $('btn-stop').style.display='none';$('btn-torch').style.display='none';
+  $('btn-stop').style.display='none';
+  $('cam-laser').classList.remove('on');
   $('cam-isbn').textContent='';
-  $('cam-hint').textContent='Pointez vers un code-barres ISBN';
+  $('cam-status').textContent='Appuyez sur Démarrer pour scanner un ISBN';
 }
 
-async function toggleTorch(){
-  if(!torchTrack) return;
-  torchOn=!torchOn;
-  await torchTrack.applyConstraints({advanced:[{torch:torchOn}]});
-  $('btn-torch').textContent=torchOn?'💡':'🔦';
-}
-
-/* ═══════════════════════════
-   FETCH BOOK INFO
-═══════════════════════════ */
+/* OPEN LIBRARY */
 async function fetchBook(isbn){
   $('ldr').classList.add('on');
-  $('lbl').textContent='Recherche du livre…';
   $('pending-wrap').innerHTML='';
-
   try{
-    // Open Library ISBN API
-    const url=`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`;
-    const res=await fetch(url);
+    const res=await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
     const data=await res.json();
-    const key=`ISBN:${isbn}`;
-    const book=data[key];
-
-    if(!book) throw new Error(`ISBN ${isbn} introuvable dans Open Library`);
-
-    const title=book.title||'Titre inconnu';
-    const authors=(book.authors||[]).map(a=>a.name).join(', ')||'';
+    const book=data[`ISBN:${isbn}`];
+    if(!book) throw new Error(`ISBN ${isbn} non trouvé dans Open Library`);
+    const title=book.title||'';
+    const author=(book.authors||[]).map(a=>a.name).join(', ');
     const year=book.publish_date?.match(/\d{4}/)?.[0]||'';
     const publisher=(book.publishers||[]).map(p=>p.name).join(', ')||'';
-    const pages=book.number_of_pages||'';
-    const subjects=(book.subjects||[]).map(s=>s.name||s).slice(0,3);
+    const pages=book.number_of_pages?String(book.number_of_pages):'';
+    const subjects=(book.subjects||[]).map(s=>s.name||s).slice(0,4);
     const genre=guessGenre(subjects,title);
-    const language=(book.languages||[]).map(l=>l.key?.replace('/languages/',''))[0]||'';
-    const langLabel={'fre':'Français','eng':'Anglais','spa':'Espagnol','ger':'Allemand','ita':'Italien','por':'Portugais'}[language]||language.toUpperCase()||'';
+    const langCode=(book.languages||[])[0]?.key?.replace('/languages/','')||'';
+    const language={'fre':'Français','eng':'Anglais','spa':'Espagnol','ger':'Allemand','ita':'Italien','por':'Portugais'}[langCode]||langCode.toUpperCase()||'';
     const coverUrl=book.cover?.medium||book.cover?.small||'';
-
-    const entry={
-      isbn,title,author:authors,year,publisher,genre,language:langLabel,
-      pages:pages?String(pages):'',subjects:subjects.join(', '),coverUrl,
-      id:uid(),addedAt:Date.now()
-    };
-
+    const entry={isbn,title,author,year,publisher,pages,genre,language,coverUrl,subjects:subjects.join(', '),id:uid(),addedAt:Date.now()};
     $('ldr').classList.remove('on');
     showPending(entry);
-
   }catch(e){
     $('ldr').classList.remove('on');
     $('scan-err-msg').textContent=e.message;
@@ -617,67 +368,64 @@ async function fetchBook(isbn){
 }
 
 function guessGenre(subjects,title){
-  const txt=(subjects.join(' ')+' '+title).toLowerCase();
-  if(/roman|fiction|novel|story/.test(txt)) return 'Roman';
-  if(/science.?fic|sf|scifi|futur/.test(txt)) return 'Science-Fiction';
-  if(/polar|crime|thriller|myst/.test(txt)) return 'Policier';
-  if(/histor/.test(txt)) return 'Histoire';
-  if(/biograph|memoir/.test(txt)) return 'Biographie';
-  if(/philosoph/.test(txt)) return 'Philosophie';
-  if(/essay|essai/.test(txt)) return 'Essai';
-  if(/child|jeunes|youth|kid/.test(txt)) return 'Jeunesse';
-  if(/comic|manga|bd|bande/.test(txt)) return 'BD/Manga';
-  if(/cook|recette|cuisine/.test(txt)) return 'Cuisine';
-  if(/art|paint|photo/.test(txt)) return 'Art';
-  if(/scien|biolog|physic|chimi/.test(txt)) return 'Science';
-  if(/develop|self.help/.test(txt)) return 'Développement';
+  const t=(subjects.join(' ')+' '+title).toLowerCase();
+  if(/science.?fic|sf\b|scifi|futur/.test(t)) return 'Science-Fiction';
+  if(/polar|crime|thriller|myst|detect/.test(t)) return 'Policier';
+  if(/roman|fiction|novel/.test(t)) return 'Roman';
+  if(/histor/.test(t)) return 'Histoire';
+  if(/biograph|memoir/.test(t)) return 'Biographie';
+  if(/philosoph/.test(t)) return 'Philosophie';
+  if(/essay|essai/.test(t)) return 'Essai';
+  if(/child|jeunes|youth|kid/.test(t)) return 'Jeunesse';
+  if(/comic|manga|bd|bande/.test(t)) return 'BD/Manga';
+  if(/cook|recette|cuisine/.test(t)) return 'Cuisine';
+  if(/scien|biolog|physic|chimi/.test(t)) return 'Science';
+  if(/develop|self.help/.test(t)) return 'Développement';
   return 'Autre';
 }
 
-/* ═══════════════════════════
-   PENDING CARD
-═══════════════════════════ */
-function showPending(entry){
-  const inLib=library.some(b=>b.isbn===entry.isbn);
+/* PENDING CARD */
+function showPending(e){
+  const inLib=library.some(b=>b.isbn===e.isbn);
+  const cover=e.coverUrl
+    ?`<img class="cover-img" src="${esc(e.coverUrl)}" onerror="this.outerHTML='<div class=cover-ph>📖</div>'" loading="lazy"/>`
+    :`<div class="cover-ph">📖</div>`;
+  // Stocker l'entry dans une variable globale pour éviter les problèmes d'échappement JSON dans onclick
+  window._pendingEntry=e;
   $('pending-wrap').innerHTML=`
     <div class="pending-card">
       <div class="pending-cover">
-        ${entry.coverUrl
-          ?`<img class="cover-img" src="${entry.coverUrl}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" loading="lazy"/><div class="cover-placeholder" style="display:none">📖</div>`
-          :`<div class="cover-placeholder">📖</div>`}
+        ${cover}
         <div class="pending-meta">
-          <div class="pending-title">${esc(entry.title)}</div>
-          ${entry.author?`<div class="pending-author">— ${esc(entry.author)}</div>`:''}
+          <div class="pending-title">${esc(e.title)||'Titre inconnu'}</div>
+          ${e.author?`<div class="pending-author">— ${esc(e.author)}</div>`:''}
           <div class="pending-tags">
-            ${entry.year?`<span class="t yr">${entry.year}</span>`:''}
-            ${entry.language?`<span class="t ln">${esc(entry.language)}</span>`:''}
-            ${entry.genre?`<span class="t gn">${esc(entry.genre)}</span>`:''}
-            ${entry.pages?`<span class="t ln">${entry.pages} p.</span>`:''}
+            ${e.year?`<span class="t yr">${e.year}</span>`:''}
+            ${e.language?`<span class="t ln">${esc(e.language)}</span>`:''}
+            ${e.genre?`<span class="t gn">${esc(e.genre)}</span>`:''}
+            ${e.pages?`<span class="t ln">${e.pages} p.</span>`:''}
           </div>
-          <div class="pending-isbn">ISBN ${entry.isbn}${entry.publisher?' · '+esc(entry.publisher):''}</div>
+          <div class="pending-isbn">ISBN ${e.isbn}${e.publisher?' · '+esc(e.publisher):''}</div>
         </div>
       </div>
       <div class="pending-actions">
         ${inLib
-          ?`<button class="btn-action skip" onclick="$('pending-wrap').innerHTML=''" style="flex:1">✓ Déjà dans la bibliothèque</button>`
-          :`<button class="btn-action add" onclick="addBook(${JSON.stringify(entry).replace(/"/g,'&quot;')})">＋ Ajouter</button>
-            <button class="btn-action skip" onclick="$('pending-wrap').innerHTML=''">Ignorer</button>`
+          ?`<button class="btn-pa skip" style="flex:1" onclick="$('pending-wrap').innerHTML=''">✓ Déjà dans la bibliothèque</button>`
+          :`<button class="btn-pa add" onclick="addBook(window._pendingEntry)">＋ Ajouter</button>
+            <button class="btn-pa skip" onclick="$('pending-wrap').innerHTML=''">Ignorer</button>`
         }
       </div>
     </div>`;
 }
 
-/* ═══════════════════════════
-   LIBRARY CRUD
-═══════════════════════════ */
+/* LIBRARY CRUD */
 function updateBadge(){$('hdr-badge').textContent=library.length+' livre'+(library.length>1?'s':'')}
 
-async function addBook(entry){
-  if(typeof entry==='string') entry=JSON.parse(entry);
-  if(library.some(b=>b.isbn===entry.isbn)){toast('Déjà dans la bibliothèque');return}
-  library.unshift(entry);
+async function addBook(e){
+  if(library.some(b=>b.isbn===e.isbn)){toast('Déjà dans la bibliothèque');return}
+  library.unshift(e);
   await saveLib();
-  sessionBooks.unshift(entry);
+  sessionBooks.unshift(e);
   renderSession();
   $('pending-wrap').innerHTML='';
   toast('Ajouté ✓');
@@ -694,9 +442,7 @@ async function clearLib(){
   library=[];await saveLib();renderLib();
 }
 
-/* ═══════════════════════════
-   SESSION LIST
-═══════════════════════════ */
+/* SESSION */
 function renderSession(){
   if(!sessionBooks.length){$('session-section').style.display='none';return}
   $('session-section').style.display='';
@@ -716,14 +462,8 @@ function renderSession(){
     </div>`).join('');
 }
 
-/* ═══════════════════════════
-   LIBRARY RENDER
-═══════════════════════════ */
-function setSort(s){
-  currentSort=s;
-  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
-  renderLib();
-}
+/* LIBRARY */
+function setSort(s){currentSort=s;document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('on',b.dataset.s===s));renderLib()}
 function setGenre(g){currentGenre=g;renderLib()}
 function onSearch(){$('s-clear').classList.toggle('visible',$('s-input').value.length>0);renderLib()}
 function clearSearch(){$('s-input').value='';$('s-clear').classList.remove('visible');renderLib()}
@@ -732,18 +472,13 @@ function renderLib(){
   updateBadge();
   const q=norm($('s-input').value||'');
   const allGenres=[...new Set(library.map(b=>b.genre).filter(Boolean))].sort();
-
-  // Genre select
   const sel=$('genre-select');
   sel.innerHTML=`<option value="all">Tous les genres (${library.length})</option>`
     +allGenres.map(g=>`<option value="${esc(g)}">${esc(g)} (${library.filter(b=>b.genre===g).length})</option>`).join('');
   if(allGenres.includes(currentGenre)) sel.value=currentGenre;
   else{currentGenre='all';sel.value='all'}
 
-  if(!library.length){
-    $('lib-empty').style.display='';$('lib-info').style.display='none';
-    $('no-res').style.display='none';$('lib-list').innerHTML='';return
-  }
+  if(!library.length){$('lib-empty').style.display='';$('lib-info').style.display='none';$('no-res').style.display='none';$('lib-list').innerHTML='';return}
   $('lib-empty').style.display='none';$('lib-info').style.display='';
 
   let list=library.filter(b=>{
@@ -751,7 +486,6 @@ function renderLib(){
     const mg=currentGenre==='all'||b.genre===currentGenre;
     return mq&&mg;
   });
-
   list=[...list].sort((a,b)=>{
     if(currentSort==='date') return (b.addedAt||0)-(a.addedAt||0);
     if(currentSort==='title') return norm(a.title).localeCompare(norm(b.title),'fr');
@@ -768,7 +502,6 @@ function renderLib(){
 
   if(!list.length){$('no-res').style.display='';$('lib-list').innerHTML='';return}
   $('no-res').style.display='none';
-
   $('lib-list').innerHTML=list.map((b,i)=>`
     <div class="bk" style="animation-delay:${Math.min(i*.025,.3)}s">
       <div class="bk-row">
@@ -789,9 +522,7 @@ function renderLib(){
     </div>`).join('');
 }
 
-/* ═══════════════════════════
-   EXPORT / IMPORT
-═══════════════════════════ */
+/* EXPORT / IMPORT */
 function exportCSV(){
   if(!library.length) return;
   const h=['#','Titre','Auteur','Année','Genre','Langue','Éditeur','Pages','ISBN'];
@@ -801,48 +532,35 @@ function exportCSV(){
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
   a.download='ma_bibliotheque.csv';a.click();
 }
-
 function exportJSON(){
   if(!library.length){toast('Bibliothèque vide');return}
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(library,null,2)],{type:'application/json'}));
   a.download='ma_bibliotheque.json';a.click();
-  toast('Sauvegarde téléchargée ✓');
+  toast('Backup téléchargé ✓');
 }
-
 function importJSON(){
   const inp=document.createElement('input');
-  inp.type='file';inp.accept='.json,application/json';
+  inp.type='file';inp.accept='.json';
   inp.onchange=async e=>{
-    const f=e.target.files[0];if(!f) return;
     try{
-      const data=JSON.parse(await f.text());
-      if(!Array.isArray(data)) throw new Error();
-      const existing=new Set(library.map(b=>b.isbn||b.id));
-      let n=0;
-      data.forEach(b=>{if(!existing.has(b.isbn||b.id)){library.push(b);n++}});
-      await saveLib();renderLib();
-      toast(`${n} livre${n>1?'s':''} importé${n>1?'s':''} ✓`);
+      const data=JSON.parse(await e.target.files[0].text());
+      if(!Array.isArray(data)) throw 0;
+      const ex=new Set(library.map(b=>b.isbn||b.id));
+      let n=0;data.forEach(b=>{if(!ex.has(b.isbn||b.id)){library.push(b);n++}});
+      await saveLib();renderLib();toast(`${n} livre${n>1?'s':''} importé${n>1?'s':''} ✓`);
     }catch{toast('Fichier invalide')}
   };inp.click();
 }
 
-/* ═══════════════════════════
-   UTILS
-═══════════════════════════ */
+/* UTILS */
 function norm(s){return(s||'').toLowerCase().trim()}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+let _tt=null;
+function toast(m){const e=$('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),2200)}
 
-let _toastT=null;
-function toast(msg){
-  const el=$('toast');el.textContent=msg;el.classList.add('show');
-  clearTimeout(_toastT);_toastT=setTimeout(()=>el.classList.remove('show'),2200);
-}
-
-/* ═══════════════════════════
-   INIT
-═══════════════════════════ */
+/* INIT */
 (async()=>{await initLib();renderLib()})();
 </script>
 </body>
