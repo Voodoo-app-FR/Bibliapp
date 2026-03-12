@@ -8,7 +8,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Biblio"/>
   <title>Bibliothèque</title>
-  <script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -414,6 +413,7 @@ let currentPage='scan', currentSort='date', currentGenre='all';
 let library=[], sessionBooks=[];
 let codeReader=null, scanning=false, torchOn=false, torchTrack=null;
 let lastScannedISBN='', scanCooldown=false;
+let camStream=null, scanLoop=null, torchTrack=null, torchOn=false;
 
 /* ═══════════════════════════
    INDEXEDDB STORAGE
@@ -451,55 +451,114 @@ function showPage(p){
 }
 
 /* ═══════════════════════════
-   BARCODE SCANNER (ZXing)
+   BARCODE SCANNER — BarcodeDetector natif (Android Chrome)
 ═══════════════════════════ */
 async function startScan(){
   $('btn-start').disabled=true;
   $('cam-hint').textContent='Démarrage de la caméra…';
   try{
-    codeReader=new ZXing.BrowserMultiFormatReader();
-
-    // Trouver la caméra arrière via mediaDevices (compatible Android Chrome)
-    const devices=await navigator.mediaDevices.enumerateDevices();
-    const videoDevices=devices.filter(d=>d.kind==='videoinput');
-    const backCam=videoDevices.find(d=>/(back|rear|environment)/i.test(d.label))
-                 ||videoDevices[videoDevices.length-1];
-    const deviceId=backCam?.deviceId||undefined;
-
-    await codeReader.decodeFromVideoDevice(deviceId,'cam-video',async(result,err)=>{
-      if(!result) return;
-      const isbn=result.getText().replace(/[^0-9X]/g,'');
-      if(!isbn||isbn===lastScannedISBN||scanCooldown) return;
-      if(isbn.length!==10&&isbn.length!==13) return;
-      lastScannedISBN=isbn;
-      scanCooldown=true;
-      setTimeout(()=>{scanCooldown=false;lastScannedISBN=''},4000);
-      $('cam-isbn').textContent='ISBN : '+isbn;
-      $('scan-err').style.display='none';
-      await fetchBook(isbn);
+    // Caméra arrière en haute résolution
+    camStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}
     });
+    const video=$('cam-video');
+    video.srcObject=camStream;
+    await video.play();
 
-    scanning=true;
+    // Torche si disponible
+    const track=camStream.getVideoTracks()[0];
+    const caps=track.getCapabilities?.();
+    if(caps?.torch){torchTrack=track;$('btn-torch').style.display=''}
+
     $('btn-start').style.display='none';
     $('btn-stop').style.display='';
     $('cam-hint').textContent='Pointez vers un code-barres ISBN';
 
-    // Torch support
-    const stream=$('cam-video').srcObject;
-    if(stream){
-      const track=stream.getVideoTracks()[0];
-      const caps=track.getCapabilities?.();
-      if(caps?.torch){torchTrack=track;$('btn-torch').style.display=''}
+    // Choisir le moteur de détection
+    if('BarcodeDetector' in window){
+      startNativeDetector(video);
+    } else {
+      // Fallback : décodage canvas pixel-by-pixel via une lib légère
+      await loadFallbackDecoder();
+      startFallbackDetector(video);
     }
+
   }catch(e){
     $('btn-start').disabled=false;
-    $('cam-hint').textContent='Erreur : '+e.message;
+    $('cam-hint').textContent='Erreur caméra : '+e.message;
   }
 }
 
+// ── Moteur 1 : BarcodeDetector natif ──
+function startNativeDetector(video){
+  const detector=new BarcodeDetector({formats:['ean_13','ean_8','isbn','code_128','upc_a','upc_e']});
+  async function tick(){
+    if(!camStream) return;
+    try{
+      const codes=await detector.detect(video);
+      for(const c of codes){
+        const isbn=c.rawValue.replace(/[^0-9X]/g,'');
+        if((isbn.length===13||isbn.length===10)&&!scanCooldown&&isbn!==lastScannedISBN){
+          onISBN(isbn); break;
+        }
+      }
+    }catch(_){}
+    scanLoop=requestAnimationFrame(tick);
+  }
+  scanLoop=requestAnimationFrame(tick);
+}
+
+// ── Moteur 2 : fallback via quagga2 chargé à la demande ──
+let quaggaLoaded=false;
+async function loadFallbackDecoder(){
+  if(quaggaLoaded) return;
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/lib/quagga.min.js';
+    s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+  quaggaLoaded=true;
+}
+
+function startFallbackDecoder(video){
+  $('cam-hint').textContent='Initialisation…';
+  Quagga.init({
+    inputStream:{type:'LiveStream', target:video, constraints:{facingMode:'environment'}},
+    decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','upc_reader']},
+    locate:true
+  },err=>{
+    if(err){$('cam-hint').textContent='Erreur scanner : '+err;return}
+    Quagga.start();
+    $('cam-hint').textContent='Pointez vers un code-barres ISBN';
+  });
+  Quagga.onDetected(data=>{
+    const isbn=(data.codeResult?.code||'').replace(/[^0-9X]/g,'');
+    if((isbn.length===13||isbn.length===10)&&!scanCooldown&&isbn!==lastScannedISBN){
+      onISBN(isbn);
+    }
+  });
+}
+
+function onISBN(isbn){
+  lastScannedISBN=isbn;
+  scanCooldown=true;
+  setTimeout(()=>{scanCooldown=false;lastScannedISBN=''},5000);
+  $('cam-isbn').textContent='ISBN : '+isbn;
+  $('scan-err').style.display='none';
+  fetchBook(isbn);
+}
+
 function stopScan(){
-  if(codeReader){codeReader.reset();codeReader=null}
-  scanning=false;torchOn=false;torchTrack=null;
+  // Arrêt BarcodeDetector
+  if(scanLoop){cancelAnimationFrame(scanLoop);scanLoop=null}
+  // Arrêt Quagga si actif
+  if(quaggaLoaded){try{Quagga.stop()}catch(_){}}
+  // Arrêt caméra
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null}
+  const video=$('cam-video');
+  video.srcObject=null;
+  torchOn=false;torchTrack=null;
   $('btn-start').style.display='';$('btn-start').disabled=false;
   $('btn-stop').style.display='none';$('btn-torch').style.display='none';
   $('cam-isbn').textContent='';
