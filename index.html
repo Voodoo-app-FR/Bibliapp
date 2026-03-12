@@ -411,9 +411,9 @@
 const $=id=>document.getElementById(id);
 let currentPage='scan', currentSort='date', currentGenre='all';
 let library=[], sessionBooks=[];
-let codeReader=null, scanning=false, torchOn=false, torchTrack=null;
 let lastScannedISBN='', scanCooldown=false;
 let camStream=null, scanLoop=null, torchTrack=null, torchOn=false;
+let quaggaLoaded=false;
 
 /* ═══════════════════════════
    INDEXEDDB STORAGE
@@ -509,7 +509,6 @@ function startNativeDetector(video){
 }
 
 // ── Moteur 2 : fallback via quagga2 chargé à la demande ──
-let quaggaLoaded=false;
 async function loadFallbackDecoder(){
   if(quaggaLoaded) return;
   await new Promise((res,rej)=>{
