@@ -168,12 +168,54 @@
 
     .toast{position:fixed;bottom:calc(var(--PH) + var(--B) + 58px);left:50%;transform:translateX(-50%) translateY(60px);background:var(--card);border:1px solid var(--borderB);color:var(--grn);padding:9px 18px;border-radius:20px;font-size:.66rem;letter-spacing:.08em;z-index:999;transition:transform .28s ease;white-space:nowrap;pointer-events:none}
     .toast.show{transform:translateX(-50%) translateY(0)}
+
+    /* CONFIRM MODAL */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s ease;pointer-events:none}
+    .confirm-overlay.show{opacity:1;pointer-events:auto}
+    .confirm-box{background:var(--card);border:1px solid var(--borderB);border-radius:12px;padding:24px 22px 18px;max-width:300px;width:85%;text-align:center;transform:scale(.9);transition:transform .2s ease}
+    .confirm-overlay.show .confirm-box{transform:scale(1)}
+    .confirm-msg{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--text);line-height:1.4;margin-bottom:20px}
+    .confirm-btns{display:flex;gap:10px}
+    .confirm-btn{flex:1;padding:10px 0;border-radius:8px;font-family:'Inconsolata',monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--border);transition:all .15s}
+    .confirm-btn.cancel{background:var(--card2);color:var(--dim)}
+    .confirm-btn.cancel:active{background:var(--surface)}
+    .confirm-btn.ok{background:var(--rust);color:#e8dfc8;border-color:var(--rust)}
+    .confirm-btn.ok:active{opacity:.8}
+
+    /* MANUAL ADD FORM */
+    .manual-toggle{width:auto;margin:8px auto 0;display:block;padding:6px 16px !important;font-size:.6rem !important;color:var(--dim) !important;background:none !important;border:1px solid var(--border) !important;border-radius:20px}
+    .manual-form{display:none;background:var(--card);border:1px solid var(--borderB);border-radius:10px;padding:16px 14px;margin-top:10px;animation:up .25s ease both}
+    .manual-form.open{display:block}
+    .mf-title{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;color:var(--text);text-align:center;margin-bottom:14px}
+    .mf-grid{display:flex;flex-direction:column;gap:10px}
+    .mf-row{display:flex;gap:8px}
+    .mf-row>*{flex:1;min-width:0}
+    .mf-label{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:3px;display:block}
+    .mf-input,.mf-select,.mf-textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-family:'Inconsolata',monospace;font-size:.75rem;color:var(--text);outline:none;transition:border-color .2s;box-sizing:border-box}
+    .mf-input:focus,.mf-select:focus,.mf-textarea:focus{border-color:var(--borderB)}
+    .mf-input::placeholder{color:var(--faint)}
+    .mf-select{appearance:none;-webkit-appearance:none;cursor:pointer}
+    .mf-textarea{resize:vertical;min-height:60px;font-size:.7rem;line-height:1.4}
+    .mf-actions{display:flex;gap:8px;margin-top:6px}
+    .mf-btn{flex:1;padding:11px 8px;border-radius:8px;border:none;cursor:pointer;font-family:'Inconsolata',monospace;font-size:.72rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;transition:opacity .15s,transform .15s}
+    .mf-btn:active{transform:scale(.97);opacity:.85}
+    .mf-btn.pri{background:var(--grn);color:#060806}
+    .mf-btn.sec{background:var(--card2);color:var(--dim);border:1px solid var(--border)}
+    .mf-required{color:#bf6858;font-size:.7rem}
   </style>
 </head>
 <body>
 
-<!-- Cadre bois PNG -->
-<div id="wood-overlay"></div>
+<!-- Confirm Modal -->
+<div id="confirmOverlay" class="confirm-overlay">
+  <div class="confirm-box">
+    <div id="confirmMsg" class="confirm-msg"></div>
+    <div class="confirm-btns">
+      <button id="confirmNo" class="confirm-btn cancel">Annuler</button>
+      <button id="confirmYes" class="confirm-btn ok">Supprimer</button>
+    </div>
+  </div>
+</div>
 
 <div class="hdr">
   <div class="hdr-top">
@@ -199,6 +241,73 @@
       <button class="btn-cam pri" id="btn-start" onclick="startScan()">▶ Démarrer</button>
       <button class="btn-cam sec" id="btn-stop" onclick="stopScan()" style="display:none">⏹ Arrêter</button>
     </div>
+    <button class="btn-cam sec manual-toggle" onclick="toggleManualForm()">✏️ Ajouter manuellement</button>
+
+    <div id="manual-form" class="manual-form">
+      <div class="mf-title">📖 Ajout manuel</div>
+      <div class="mf-grid">
+        <div>
+          <label class="mf-label">Titre <span class="mf-required">*</span></label>
+          <input class="mf-input" id="mf-title" type="text" placeholder="Le Petit Prince">
+        </div>
+        <div>
+          <label class="mf-label">Auteur <span class="mf-required">*</span></label>
+          <input class="mf-input" id="mf-author" type="text" placeholder="Antoine de Saint-Exupéry">
+        </div>
+        <div class="mf-row">
+          <div>
+            <label class="mf-label">ISBN</label>
+            <input class="mf-input" id="mf-isbn" type="text" placeholder="978-…">
+          </div>
+          <div>
+            <label class="mf-label">Pages</label>
+            <input class="mf-input" id="mf-pages" type="number" placeholder="120">
+          </div>
+        </div>
+        <div class="mf-row">
+          <div>
+            <label class="mf-label">Genre</label>
+            <select class="mf-select" id="mf-genre">
+              <option value="">— Choisir —</option>
+              <option>Roman</option>
+              <option>Science-Fiction</option>
+              <option>Policier</option>
+              <option>Histoire</option>
+              <option>Biographie</option>
+              <option>Philosophie</option>
+              <option>Essai</option>
+              <option>Jeunesse</option>
+              <option>BD/Manga</option>
+              <option>Cuisine</option>
+              <option>Science</option>
+              <option>Développement</option>
+              <option>Autre</option>
+            </select>
+          </div>
+          <div>
+            <label class="mf-label">Année</label>
+            <input class="mf-input" id="mf-year" type="text" placeholder="2024">
+          </div>
+        </div>
+        <div>
+          <label class="mf-label">Éditeur</label>
+          <input class="mf-input" id="mf-publisher" type="text" placeholder="Gallimard">
+        </div>
+        <div>
+          <label class="mf-label">URL de couverture</label>
+          <input class="mf-input" id="mf-cover" type="url" placeholder="https://…">
+        </div>
+        <div>
+          <label class="mf-label">Description</label>
+          <textarea class="mf-textarea" id="mf-desc" placeholder="Résumé du livre…"></textarea>
+        </div>
+        <div class="mf-actions">
+          <button class="mf-btn sec" onclick="toggleManualForm()">Annuler</button>
+          <button class="mf-btn pri" onclick="submitManualBook()">＋ Ajouter</button>
+        </div>
+      </div>
+    </div>
+
     <div class="ldr" id="ldr">
       <div class="ldr-lbl">Recherche du livre…</div>
       <div class="ldr-track"><div class="ldr-fill"></div></div>
@@ -271,6 +380,19 @@
 
 <script>
 const $=id=>document.getElementById(id);
+
+/* APP CONFIRM */
+function appConfirm(msg){
+  return new Promise(resolve=>{
+    const ov=$('confirmOverlay'),m=$('confirmMsg'),yes=$('confirmYes'),no=$('confirmNo');
+    m.textContent=msg;
+    ov.classList.add('show');
+    function close(val){ov.classList.remove('show');yes.onclick=null;no.onclick=null;resolve(val)}
+    yes.onclick=()=>close(true);
+    no.onclick=()=>close(false);
+    ov.onclick=e=>{if(e.target===ov)close(false)};
+  });
+}
 
 /* STATE */
 let currentPage='scan', currentSort='date', currentGenre='all';
@@ -438,6 +560,38 @@ function guessGenre(subjects,title){
   return 'Autre';
 }
 
+/* MANUAL ADD */
+function toggleManualForm(){
+  $('manual-form').classList.toggle('open');
+}
+
+function submitManualBook(){
+  const title=$('mf-title').value.trim();
+  const author=$('mf-author').value.trim();
+  if(!title){toast('Titre requis');$('mf-title').focus();return}
+  if(!author){toast('Auteur requis');$('mf-author').focus();return}
+  const entry={
+    isbn:$('mf-isbn').value.trim()||'MANUAL-'+uid(),
+    title,
+    author,
+    year:$('mf-year').value.trim(),
+    publisher:$('mf-publisher').value.trim(),
+    pages:$('mf-pages').value.trim(),
+    genre:$('mf-genre').value||'Autre',
+    language:'',
+    coverUrl:$('mf-cover').value.trim(),
+    subjects:'',
+    description:$('mf-desc').value.trim(),
+    id:uid(),
+    addedAt:Date.now()
+  };
+  showPending(entry);
+  // Reset form
+  ['mf-title','mf-author','mf-isbn','mf-pages','mf-year','mf-publisher','mf-cover','mf-desc'].forEach(id=>$(id).value='');
+  $('mf-genre').selectedIndex=0;
+  $('manual-form').classList.remove('open');
+}
+
 /* PENDING CARD */
 function showPending(e){
   const inLib=library.some(b=>b.isbn===e.isbn);
@@ -486,13 +640,14 @@ async function addBook(e){
 }
 
 async function removeBook(id){
+  if(!await appConfirm('Supprimer ce livre de la bibliothèque ?')) return;
   library=library.filter(b=>b.id!==id);
   await saveLib();renderLib();toast('Retiré');
 }
 
 async function clearLib(){
   if(!library.length) return;
-  if(!confirm(`Supprimer les ${library.length} livres ?`)) return;
+  if(!await appConfirm(`Supprimer les ${library.length} livres ?`)) return;
   library=[];await saveLib();renderLib();
 }
 
